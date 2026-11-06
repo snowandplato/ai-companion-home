@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.log
+.env
+.venv/
+venv/
+memory.db
+migration_previews/
+migration_preview_*.md
+migration_preview_*.json
