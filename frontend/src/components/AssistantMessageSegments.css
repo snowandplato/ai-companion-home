@@ -1,0 +1,44 @@
+.mav-bubble-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.mav-assistant-bubble {
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: min(84%, 720px);
+  padding: 10px 15px;
+  border: none;
+  border-radius: 15px 15px 15px 5px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(81, 63, 75, 0.045);
+  animation: mav-bubble-arrive 180ms ease-out both;
+  overflow-wrap: anywhere;
+}
+
+.mav-bubble-stack-dark .mav-assistant-bubble {
+  background: rgba(54, 48, 62, 0.92);
+}
+
+.mav-assistant-bubble > :first-child,
+.mav-assistant-bubble p:first-child { margin-top: 0; }
+.mav-assistant-bubble > :last-child,
+.mav-assistant-bubble p:last-child { margin-bottom: 0; }
+.mav-bubble-notice { margin: 2px 0 2px 4px; }
+.mav-bubble-stack-static .mav-assistant-bubble { animation: none; }
+
+@keyframes mav-bubble-arrive {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .mav-assistant-bubble { max-width: 92%; padding: 9px 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mav-assistant-bubble { animation: none; }
+}

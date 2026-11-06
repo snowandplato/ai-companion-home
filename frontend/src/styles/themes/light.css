@@ -1,0 +1,23 @@
+/* 浅色模式 */
+:root {
+  --bg-primary: #F5F3F7;
+  --bg-card: #FFFFFF;
+  --color-purple-light: #E9E6EA;
+  --color-purple-mid: #D3D1DE;
+  --color-purple-dark: #716E85;
+  --color-orange: #E98E6B;
+  --color-orange-dark: #D87455;
+  --text-primary: #2D2B35;
+  --text-secondary: #716E85;
+}
+
+/* 深色模式 */
+[data-theme="dark"] {
+  --bg-primary: #1E1C24;
+  --bg-card: #2A2830;
+  --color-orange: #E98E6B;
+  --text-primary: #E9E6EA;
+  --text-secondary: #9D9AAA;
+  --color-purple-mid: #4A4760;
+  --color-purple-dark: #716E85;
+}

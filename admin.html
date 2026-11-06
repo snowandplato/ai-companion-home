@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M-Home Gateway Admin</title>
+<style>
+  :root {
+    --bg: #0f0f11;
+    --bg2: #161618;
+    --bg3: #1e1e22;
+    --border: #2a2a30;
+    --text: #e8e6f0;
+    --text2: #9896a8;
+    --text3: #5a5868;
+    --accent: #a78bfa;
+    --accent2: #7c3aed;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  header h1 { font-size: 14px; color: var(--text); letter-spacing: 0.05em; }
+  header .sub { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 12px 28px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text3);
+    cursor: pointer;
+    border-radius: var(--radius) var(--radius) 0 0;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+    background: transparent;
+  }
+  .tab:hover { color: var(--text2); }
+  .tab.active {
+    color: var(--accent);
+    background: var(--bg);
+    border-color: var(--border);
+    border-bottom: 1px solid var(--bg);
+    margin-bottom: -1px;
+  }
+  .content { padding: 24px 28px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Status grid */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .stat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .stat-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+  .stat-value { font-size: 18px; color: var(--accent); font-weight: 600; }
+  .stat-value.ok { color: var(--green); }
+  .stat-value.warn { color: var(--yellow); }
+  .stat-value.err { color: var(--red); }
+
+  /* Summary text */
+  .summary-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* Lists */
+  .list-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .list-item-date {
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+    padding-top: 2px;
+    min-width: 80px;
+  }
+  .list-item-content {
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.7;
+    flex: 1;
+  }
+  .list-item-actions { display: flex; gap: 8px; align-items: center; }
+  .expand-btn {
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .expand-btn:hover { color: var(--accent); background: var(--bg); }
+  .collapsed { max-height: 3.6em; overflow: hidden; }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .thread-item {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .thread-item:hover,
+  .thread-item.active {
+    border-color: var(--accent2);
+    background: #202026;
+  }
+  .thread-key {
+    color: var(--accent);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+  .thread-title {
+    color: var(--text);
+    font-size: 13px;
+    margin: 2px 0 6px;
+  }
+  .thread-short {
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.7;
+    margin-bottom: 6px;
+  }
+  .thread-full {
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  .thread-events {
+    display: none;
+    width: 100%;
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .thread-events.open { display: block; }
+  .thread-event-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    margin-top: 8px;
+  }
+  .thread-meta,
+  .event-meta {
+    color: var(--text3);
+    font-size: 10px;
+    margin-top: 6px;
+  }
+  .tag-line {
+    color: var(--text3);
+    font-size: 10px;
+    margin-top: 6px;
+    overflow-wrap: anywhere;
+  }
+  .memory-v2-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .event-panel {
+    border-left: 2px solid var(--accent2);
+    padding-left: 12px;
+  }
+  @media (max-width: 720px) {
+    .toolbar { grid-template-columns: 1fr; }
+    .list-item { flex-direction: column; }
+    .list-item-date { min-width: 0; }
+  }
+
+  /* Textarea & inputs */
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 12px 14px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.7;
+    transition: border-color 0.15s;
+  }
+  textarea:focus, input[type="text"]:focus { border-color: var(--accent2); }
+  textarea { min-height: 120px; }
+
+  /* Buttons */
+  button.btn {
+    padding: 7px 16px;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  button.btn-primary {
+    background: var(--accent2);
+    color: white;
+    border-color: var(--accent2);
+  }
+  button.btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+  button.btn-ghost {
+    background: transparent;
+    color: var(--text3);
+    border-color: var(--border);
+  }
+  button.btn-ghost:hover { color: var(--text); border-color: var(--text3); }
+  button.btn-danger {
+    background: transparent;
+    color: var(--red);
+    border-color: transparent;
+    padding: 4px 8px;
+  }
+  button.btn-danger:hover { background: rgba(248,113,113,0.1); }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+
+  /* Profiles table */
+  .profile-row {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .profile-key {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  /* Lan portrait */
+  .portrait-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .portrait-lock {
+    border: 1px dashed var(--border);
+    background: rgba(167, 139, 250, 0.035);
+  }
+  .portrait-lock-copy {
+    color: var(--text2);
+    font-size: 12px;
+    max-width: 620px;
+  }
+  .portrait-password-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 360px) auto auto;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .portrait-group-title {
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    margin: 20px 0 8px;
+  }
+  .portrait-section {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .portrait-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .portrait-section-name { color: var(--text); font-size: 12px; }
+  .portrait-section-key { color: var(--text3); font-size: 10px; margin-left: 8px; }
+  .portrait-char-count { color: var(--text3); font-size: 10px; white-space: nowrap; }
+  .portrait-char-count.over { color: var(--yellow); }
+  .portrait-section textarea {
+    min-height: 118px;
+    margin: 0;
+    resize: vertical;
+    line-height: 1.75;
+  }
+  .portrait-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .portrait-unlocked {
+    color: var(--green);
+    font-size: 11px;
+    margin-right: auto;
+  }
+  @media (max-width: 640px) {
+    .portrait-password-row { grid-template-columns: 1fr; }
+    .portrait-editor-toolbar .portrait-unlocked { width: 100%; }
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok { border-color: var(--green); color: var(--green); }
+  #toast.err { border-color: var(--red); color: var(--red); }
+
+  /* Refresh btn */
+  .refresh-btn {
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: inherit;
+    margin-left: auto;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"></div>
+  <h1>M-Home Gateway</h1>
+  <span class="sub" id="last-refresh">—</span>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('status')">状态</button>
+  <button class="tab" onclick="switchTab('summaries')">每日总结</button>
+  <button class="tab" onclick="switchTab('memories')">长期记忆</button>
+  <button class="tab" onclick="switchTab('memory-v2')">记忆二期</button>
+  <button class="tab" onclick="switchTab('notes')" data-identity-template="Mav备忘">Mav备忘</button>
+  <button class="tab" onclick="switchTab('portrait')" data-identity-template="岚的画像">岚的画像</button>
+  <button class="tab" onclick="switchTab('profiles')">Profiles</button>
+  <button class="tab" onclick="switchTab('system-core')">System Core</button>
+</div>
+
+<div class="content">
+
+  <!-- 状态 -->
+  <div class="panel active" id="panel-status">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0">系统状态</span>
+      <button class="refresh-btn" onclick="loadStatus()">↻ 刷新</button>
+    </div>
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat"><div class="stat-label">scheduler</div><div class="stat-value" id="s-running">—</div></div>
+      <div class="stat"><div class="stat-label">is_summarizing</div><div class="stat-value" id="s-summarizing">—</div></div>
+      <div class="stat"><div class="stat-label">rounds_since_summary</div><div class="stat-value" id="s-rounds">—</div></div>
+      <div class="stat"><div class="stat-label">queue_length</div><div class="stat-value" id="s-queue">—</div></div>
+      <div class="stat"><div class="stat-label">daily_history_rounds</div><div class="stat-value" id="s-daily">—</div></div>
+      <div class="stat"><div class="stat-label">summary_length</div><div class="stat-value" id="s-sumlen">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">即时摘要内容</div>
+      <div class="summary-box" id="s-summary-text">（暂无）</div>
+    </div>
+  </div>
+
+  <!-- 每日总结 -->
+  <div class="panel" id="panel-summaries">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0">每日总结</span>
+      <button class="refresh-btn" onclick="loadSummaries()">↻ 刷新</button>
+    </div>
+    <div id="summaries-list">加载中…</div>
+  </div>
+
+  <!-- 长期记忆 -->
+  <div class="panel" id="panel-memories">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0">长期记忆</span>
+      <span id="memories-count" style="font-size:11px;color:var(--text3);margin-left:10px"></span>
+      <button class="refresh-btn" onclick="loadMemories(1)">↻ 刷新</button>
+    </div>
+    <div id="memories-list">加载中…</div>
+    <div id="memories-pagination" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;"></div>
+  </div>
+
+  <!-- 记忆二期 -->
+  <div class="panel" id="panel-memory-v2">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0">记忆二期 / Threads & Events</span>
+      <span id="memory-v2-count" style="font-size:11px;color:var(--text3);margin-left:10px"></span>
+      <button class="refresh-btn" onclick="loadMemoryV2(1)">↻ 刷新</button>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="memory-v2-search" placeholder="搜索 event_key / 标题 / 摘要…" onkeydown="handleMemoryV2SearchKey(event)" />
+      <button class="btn btn-primary" onclick="loadMemoryV2(1)">搜索</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <span class="card-title" style="margin:0">Embedding</span>
+        <button class="refresh-btn" onclick="loadMemoryEmbeddingStatus()">↻ 刷新</button>
+      </div>
+      <div id="memory-embedding-status" style="color:var(--text3);font-size:12px">加载中…</div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="backfillMemoryEmbeddings()">回填20条</button>
+      </div>
+    </div>
+    <div class="memory-v2-layout">
+      <div>
+        <div id="memory-v2-threads">加载中…</div>
+        <div id="memory-v2-pagination" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;"></div>
+      </div>
+      <div class="event-panel" id="memory-v2-events-panel" style="display:none">
+        <div style="display:flex;align-items:center;margin-bottom:10px">
+          <span class="card-title" style="margin:0">Thread Events</span>
+          <span id="memory-v2-events-count" style="font-size:11px;color:var(--text3);margin-left:10px"></span>
+        </div>
+        <div id="memory-v2-events"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <span class="card-title" style="margin:0">注入调试</span>
+        <button class="refresh-btn" onclick="loadMemoryInjectionDebug()">↻ 刷新</button>
+      </div>
+      <div id="memory-injection-debug" style="color:var(--text3);font-size:12px">暂无记录</div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <span class="card-title" style="margin:0">写入调试</span>
+        <button class="refresh-btn" onclick="loadMemoryWriteDebug()">↻ 刷新</button>
+      </div>
+      <div id="memory-write-debug" style="color:var(--text3);font-size:12px">暂无记录</div>
+    </div>
+  </div>
+
+  <!-- Mav备忘 -->
+  <div class="panel" id="panel-notes">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0" data-identity-template="Mav备忘">Mav备忘</span>
+      <button class="refresh-btn" onclick="loadNotes()">↻ 刷新</button>
+    </div>
+    <div class="card">
+      <div class="card-title">新增备忘</div>
+      <textarea id="note-input" placeholder="输入备忘内容…" style="min-height:80px"></textarea>
+      <div class="row">
+        <button class="btn btn-primary" onclick="addNote()">添加</button>
+      </div>
+    </div>
+    <div id="notes-list"></div>
+  </div>
+
+  <!-- 岚的画像：默认只显示运行状态与不含正文的更新日志 -->
+  <div class="panel" id="panel-portrait">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0" data-identity-template="岚的画像">岚的画像</span>
+      <button class="refresh-btn" onclick="loadPortrait()">↻ 刷新</button>
+    </div>
+
+    <div class="portrait-status-grid">
+      <div class="stat"><div class="stat-label">sections</div><div class="stat-value" id="portrait-section-count">—</div></div>
+      <div class="stat"><div class="stat-label">populated</div><div class="stat-value" id="portrait-populated-count">—</div></div>
+      <div class="stat"><div class="stat-label">model updates</div><div class="stat-value" id="portrait-update-switch">—</div></div>
+      <div class="stat"><div class="stat-label">admin password</div><div class="stat-value" id="portrait-password-status">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" data-identity-template="Mav 更新日志">Mav 更新日志</div>
+      <div id="portrait-logs" style="color:var(--text3);font-size:12px">加载中…</div>
+    </div>
+
+    <div class="card portrait-lock">
+      <div class="card-title">完整画像</div>
+      <div class="portrait-lock-copy">
+        正文默认锁定。解锁后可以导入初始文本或修正明显错误；密码只保留在当前页面内存中。
+      </div>
+      <button class="btn btn-ghost" id="portrait-unlock-start" onclick="showPortraitUnlock()" style="margin-top:12px">查看 / 编辑完整画像</button>
+      <div class="portrait-password-row" id="portrait-password-row" style="display:none">
+        <input type="password" id="portrait-password" placeholder="输入画像管理密码" onkeydown="handlePortraitPasswordKey(event)" />
+        <button class="btn btn-primary" onclick="unlockPortrait()">解锁</button>
+        <button class="btn btn-ghost" onclick="hidePortraitUnlock()">取消</button>
+      </div>
+    </div>
+
+    <div class="card" id="portrait-editor-card" style="display:none">
+      <div class="portrait-editor-toolbar">
+        <span class="portrait-unlocked">已解锁，仅限本次页面会话</span>
+        <input type="file" id="portrait-import-file" accept=".txt,text/plain" style="display:none" onchange="importPortraitFile(this)" />
+        <button class="btn btn-ghost" onclick="document.getElementById('portrait-import-file').click()">导入标题文本</button>
+        <button class="btn btn-ghost" onclick="lockPortrait()">重新锁定</button>
+      </div>
+      <div id="portrait-editor"></div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="savePortrait()">保存完整画像</button>
+        <span style="color:var(--text3);font-size:11px" data-identity-template="手动保存不会计入 Mav 更新日志">手动保存不会计入 Mav 更新日志</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profiles -->
+  <div class="panel" id="panel-profiles">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0">Profiles</span>
+      <button class="refresh-btn" onclick="loadProfiles()">↻ 刷新</button>
+    </div>
+    <div class="card">
+      <div class="card-title">新增 / 更新</div>
+      <div class="profile-row">
+        <input type="text" id="profile-key" placeholder="key" />
+        <input type="text" id="profile-value" placeholder="value" />
+        <button class="btn btn-primary" onclick="upsertProfile()">保存</button>
+      </div>
+    </div>
+    <div id="profiles-list"></div>
+  </div>
+
+  <!-- System Core -->
+  <div class="panel" id="panel-system-core">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <span class="card-title" style="margin:0">System Core</span>
+      <button class="refresh-btn" onclick="loadSystemCore()">↻ 刷新</button>
+    </div>
+    <div class="card">
+      <textarea id="system-core-input" style="min-height:400px;font-size:12px"></textarea>
+      <div class="row">
+        <button class="btn btn-primary" onclick="saveSystemCore()">保存</button>
+        <span style="color:var(--text3);font-size:11px" id="sc-chars">0 字</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const BASE = 'http://localhost:8000' // Example gateway URL for local setup.
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.className = 'show ' + type
+  setTimeout(() => el.className = '', 2000)
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const panels = ['status','summaries','memories','memory-v2','notes','portrait','profiles','system-core']
+    t.classList.toggle('active', panels[i] === name)
+  })
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + name)
+  })
+  const loaders = {
+    status: loadStatus,
+    summaries: loadSummaries,
+    memories: () => loadMemories(1),
+    'memory-v2': () => loadMemoryV2(1),
+    notes: loadNotes,
+    portrait: loadPortrait,
+    profiles: loadProfiles,
+    'system-core': loadSystemCore
+  }
+  loaders[name]?.()
+}
+
+// ── 状态 ──
+async function loadStatus() {
+  try {
+    const [statusRes, gatewayRes] = await Promise.all([
+      fetch(BASE + '/admin/status'),
+      fetch(BASE + '/status')
+    ])
+    const d = await statusRes.json()
+    const s = await gatewayRes.json()
+    const running = s?.scheduler?.running ?? false
+    document.getElementById('s-running').textContent = running ? 'running' : 'stopped'
+    document.getElementById('s-running').className = 'stat-value ' + (running ? 'ok' : 'err')
+    document.getElementById('s-summarizing').textContent = d.is_summarizing ? 'true' : 'false'
+    document.getElementById('s-summarizing').className = 'stat-value ' + (d.is_summarizing ? 'warn' : 'ok')
+    document.getElementById('s-rounds').textContent = d.rounds_since_summary ?? '—'
+    const r2 = d.rounds_since_summary ?? 0
+    document.getElementById('s-rounds').className = 'stat-value ' + (r2 >= 5 ? 'warn' : '')
+    document.getElementById('s-queue').textContent = d.queue_length ?? '—'
+    document.getElementById('s-daily').textContent = d.daily_history_rounds ?? '—'
+    document.getElementById('s-sumlen').textContent = d.summary_length ?? '—'
+    document.getElementById('s-summary-text').textContent = d.current_summary || '（暂无）'
+    document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString('zh-CN')
+  } catch(e) {
+    toast('状态加载失败', 'err')
+  }
+}
+
+// ── 每日总结 ──
+async function loadSummaries() {
+  const el = document.getElementById('summaries-list')
+  try {
+    const r = await fetch(BASE + '/admin/daily-summaries?limit=30')
+    const data = await r.json()
+    if (!data.length) { el.innerHTML = '<div style="color:var(--text3);padding:20px 0">暂无记录</div>'; return }
+    el.innerHTML = data.map(s => `
+      <div class="list-item">
+        <div class="list-item-date">${s.date}</div>
+        <div class="list-item-content collapsed" id="sum-${s.id}">${s.summary}</div>
+        <div class="list-item-actions">
+          <button class="expand-btn" onclick="toggleExpand('sum-${s.id}', this)">展开</button>
+        </div>
+      </div>
+    `).join('')
+  } catch(e) { el.innerHTML = '<div style="color:var(--red)">加载失败</div>' }
+}
+
+function toggleExpand(id, btn) {
+  const el = document.getElementById(id)
+  const collapsed = el.classList.toggle('collapsed')
+  btn.textContent = collapsed ? '展开' : '收起'
+}
+
+// ── 长期记忆 ──
+let memoriesCurrentPage = 1
+const MEMORIES_PAGE_SIZE = 20
+
+async function loadMemories(page) {
+  if (page) memoriesCurrentPage = page
+  const el = document.getElementById('memories-list')
+  const offset = (memoriesCurrentPage - 1) * MEMORIES_PAGE_SIZE
+  try {
+    const r = await fetch(`${BASE}/admin/memories?limit=${MEMORIES_PAGE_SIZE}&offset=${offset}`)
+    const data = await r.json()
+
+    // 获取总数
+    const totalR = await fetch(`${BASE}/admin/memories?limit=1000&offset=0`)
+    const totalData = await totalR.json()
+    const total = totalData.length
+    const totalPages = Math.ceil(total / MEMORIES_PAGE_SIZE)
+
+    document.getElementById('memories-count').textContent = `共 ${total} 条`
+
+    if (!data.length) { el.innerHTML = '<div style="color:var(--text3);padding:20px 0">暂无记忆</div>'; return }
+    el.innerHTML = data.map(m => `
+      <div class="list-item" id="mem-${m.id}">
+        <div style="min-width:70px">
+          <div class="list-item-date">${m.event_date || '—'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">${m.room || ''}</div>
+          <div style="font-size:10px;color:var(--text3)">${'★'.repeat(m.emotion_weight || 0)}</div>
+        </div>
+        <div style="flex:1">
+          <div style="color:var(--text);font-size:12px;margin-bottom:4px">${m.title || ''}</div>
+          <div class="list-item-content collapsed" id="mem-text-${m.id}">${m.recall_text || m.content || ''}</div>
+          ${m.context ? `<div style="color:var(--text3);font-size:10px;margin-top:6px;font-style:italic">📍 ${m.context}</div>` : ''}
+          <div style="color:var(--text3);font-size:10px;margin-top:6px">${m.keywords || ''}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="expand-btn" onclick="toggleExpand('mem-text-${m.id}', this)">展开</button>
+          <button class="btn btn-danger" onclick="deleteMemory(${m.id})">✕</button>
+        </div>
+      </div>
+    `).join('')
+
+    // 渲染分页
+    const pg = document.getElementById('memories-pagination')
+    if (totalPages <= 1) { pg.innerHTML = ''; return }
+    let btns = ''
+    btns += `<button class="btn btn-ghost" onclick="loadMemories(${memoriesCurrentPage - 1})" ${memoriesCurrentPage === 1 ? 'disabled' : ''} style="padding:4px 12px">‹</button>`
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - memoriesCurrentPage) <= 2) {
+        btns += `<button class="btn ${i === memoriesCurrentPage ? 'btn-primary' : 'btn-ghost'}" onclick="loadMemories(${i})" style="padding:4px 10px;min-width:32px">${i}</button>`
+      } else if (Math.abs(i - memoriesCurrentPage) === 3) {
+        btns += `<span style="color:var(--text3);padding:0 4px">…</span>`
+      }
+    }
+    btns += `<button class="btn btn-ghost" onclick="loadMemories(${memoriesCurrentPage + 1})" ${memoriesCurrentPage === totalPages ? 'disabled' : ''} style="padding:4px 12px">›</button>`
+    pg.innerHTML = btns
+
+  } catch(e) { el.innerHTML = '<div style="color:var(--red)">加载失败</div>' }
+}
+
+async function deleteMemory(id) {
+  if (!confirm('确认删除这条记忆？')) return
+  try {
+    await fetch(BASE + '/memory/delete/' + id, { method: 'DELETE' })
+    document.getElementById('mem-' + id)?.remove()
+    toast('已删除')
+  } catch(e) { toast('删除失败', 'err') }
+}
+
+// ── 记忆二期 ──
+let memoryV2CurrentPage = 1
+let memoryV2SelectedKey = ''
+const MEMORY_V2_PAGE_SIZE = 20
+
+function handleMemoryV2SearchKey(event) {
+  if (event.key === 'Enter') loadMemoryV2(1)
+}
+
+async function loadMemoryV2(page) {
+  if (page) memoryV2CurrentPage = page
+  const listEl = document.getElementById('memory-v2-threads')
+  const pg = document.getElementById('memory-v2-pagination')
+  const countEl = document.getElementById('memory-v2-count')
+  const eventsPanel = document.getElementById('memory-v2-events-panel')
+  const q = document.getElementById('memory-v2-search').value.trim()
+  const offset = (memoryV2CurrentPage - 1) * MEMORY_V2_PAGE_SIZE
+
+  listEl.innerHTML = '加载中…'
+  pg.innerHTML = ''
+  eventsPanel.style.display = 'none'
+  memoryV2SelectedKey = ''
+
+  try {
+    const [statsR, threadsR] = await Promise.all([
+      fetch(BASE + '/admin/memory-v2/stats'),
+      fetch(`${BASE}/admin/memory-threads?limit=${MEMORY_V2_PAGE_SIZE}&offset=${offset}&q=${encodeURIComponent(q)}`)
+    ])
+    loadMemoryWriteDebug()
+    loadMemoryInjectionDebug()
+    loadMemoryEmbeddingStatus()
+    const stats = await statsR.json()
+    const data = await threadsR.json()
+    const threads = data.threads || []
+    const total = data.total ?? threads.length
+    const totalPages = Math.max(1, Math.ceil(total / MEMORY_V2_PAGE_SIZE))
+
+    countEl.textContent = q
+      ? `命中 ${total} 个 Thread / 全库 ${stats.threads || 0} Thread · ${stats.events || 0} Event`
+      : `共 ${stats.threads || 0} 个 Thread · ${stats.events || 0} 个 Event`
+
+    if (!threads.length) {
+      listEl.innerHTML = '<div style="color:var(--text3);padding:20px 0">暂无匹配 Thread</div>'
+      return
+    }
+
+    listEl.innerHTML = threads.map(t => `
+      <div class="list-item thread-item" id="thread-${t.id}">
+        <div style="min-width:92px">
+          <div class="list-item-date">${escapeHtml(t.last_mentioned_at || '—')}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">${Number(t.mention_count || 0)} events</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="thread-key">${escapeHtml(t.event_key)}</div>
+          <div class="thread-title">${escapeHtml(t.title || '未命名 Thread')}</div>
+          <div class="thread-short">${escapeHtml(t.summary_short || t.current_state || t.summary_full || '')}</div>
+          ${t.current_state ? `<div class="thread-meta">current_state: ${escapeHtml(t.current_state)}</div>` : ''}
+          <div class="thread-events" id="thread-events-${t.id}"></div>
+        </div>
+        <div class="list-item-actions">
+          <button class="expand-btn" onclick='toggleMemoryThreadEvents(${JSON.stringify(t.event_key)}, ${t.id}, this)'>展开 Events</button>
+          <button class="btn btn-danger" onclick='deleteMemoryThreadV2(${JSON.stringify(t.event_key)}, ${t.id})'>✕</button>
+        </div>
+      </div>
+    `).join('')
+
+    let btns = ''
+    btns += `<button class="btn btn-ghost" onclick="loadMemoryV2(${memoryV2CurrentPage - 1})" ${memoryV2CurrentPage === 1 ? 'disabled' : ''} style="padding:4px 12px">‹</button>`
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - memoryV2CurrentPage) <= 2) {
+        btns += `<button class="btn ${i === memoryV2CurrentPage ? 'btn-primary' : 'btn-ghost'}" onclick="loadMemoryV2(${i})" style="padding:4px 10px;min-width:32px">${i}</button>`
+      } else if (Math.abs(i - memoryV2CurrentPage) === 3) {
+        btns += `<span style="color:var(--text3);padding:0 4px">…</span>`
+      }
+    }
+    btns += `<button class="btn btn-ghost" onclick="loadMemoryV2(${memoryV2CurrentPage + 1})" ${memoryV2CurrentPage === totalPages ? 'disabled' : ''} style="padding:4px 12px">›</button>`
+    pg.innerHTML = totalPages > 1 ? btns : ''
+
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:var(--red)">加载失败</div>'
+  }
+}
+
+async function loadMemoryInjectionDebug() {
+  const el = document.getElementById('memory-injection-debug')
+  if (!el) return
+  try {
+    const r = await fetch(BASE + '/admin/memory-injection-debug')
+    const data = await r.json()
+    if (!data.length) {
+      el.innerHTML = '<div style="color:var(--text3)">暂无注入记录。进行一次对话后刷新这里。</div>'
+      return
+    }
+    el.innerHTML = data.map(d => `
+      <div class="thread-event-item">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+          <span class="list-item-date" style="min-width:0">${escapeHtml(d.created_at || '—')}</span>
+          <span>query_embedding: ${d.query_embedding ? 'true' : 'false'}</span>
+        </div>
+        <div class="tag-line">user: ${escapeHtml(d.user_message || '')}</div>
+        <div class="tag-line">本轮关键词（高权重）: ${escapeHtml((d.primary_keywords || []).join(', ')) || '无'}</div>
+        <div class="tag-line">上一轮用户关键词（低权重）: ${escapeHtml((d.previous_keywords || []).join(', ')) || '无'}</div>
+        <div class="tag-line">扩展关键词（低权重）: ${escapeHtml((d.expanded_keywords || []).join(', ')) || '无'}</div>
+        <div class="tag-line">threads:</div>
+        ${(d.threads || []).map(t => `
+          <div class="tag-line" style="padding-left:12px">
+            ${escapeHtml(t.event_key || '')} · ${escapeHtml(t.last_mentioned_at || '—')} · ${escapeHtml(t.match_source || '')} · score ${Number(t.embedding_score || 0).toFixed(4)} · ${escapeHtml(t.title || '')}
+          </div>
+        `).join('') || '<div class="tag-line" style="padding-left:12px">无</div>'}
+        <div class="tag-line">debug直接命中 Events（这些会进入【直接命中的具体记忆】；下方预览是实际注入文本）:</div>
+        ${(d.events || []).map(ev => `
+          <div class="thread-event-item" style="background:var(--bg3)">
+            <div class="tag-line">#${escapeHtml(ev.id || '')} · ${escapeHtml(ev.event_key || '')} · ${escapeHtml(ev.match_source || '')} · 关键词分 ${Number(ev.keyword_score || 0)} · 语义分 ${Number(ev.embedding_score || 0).toFixed(4)}</div>
+            <div class="tag-line">本轮命中：${escapeHtml((ev.primary_keyword_hits || []).join(', ')) || '无'} · 上轮命中：${escapeHtml((ev.previous_keyword_hits || []).join(', ')) || '无'} · 扩展命中：${escapeHtml((ev.expanded_keyword_hits || []).join(', ')) || '无'}</div>
+            <div class="list-item-content">${escapeHtml(ev.summary || '')}</div>
+          </div>
+        `).join('') || '<div class="tag-line" style="padding-left:12px">无</div>'}
+        <div class="tag-line">debug补充 sibling Events（这些会进入【同主题下可参考的补充记忆】）:</div>
+        ${(d.sibling_events || []).map(ev => `
+          <div class="thread-event-item" style="background:var(--bg3)">
+            <div class="tag-line">#${escapeHtml(ev.id || '')} · ${escapeHtml(ev.event_key || '')} · ${escapeHtml(ev.occurred_at || '')}</div>
+            <div class="list-item-content">${escapeHtml(ev.summary || '')}</div>
+          </div>
+        `).join('') || '<div class="tag-line" style="padding-left:12px">无</div>'}
+        ${d.injected_preview ? (() => {
+          const previewText = String(d.injected_preview || '')
+          const hasLength = d.injected_length !== undefined && d.injected_length !== null
+          const shownLength = hasLength ? Number(d.injected_length || 0) : previewText.length
+          const note = hasLength
+            ? (d.injected_preview_truncated ? '（debug预览已截断）' : '（完整显示）')
+            : '（旧debug记录，长度为预览估算，可能已截断）'
+          return `<div class="tag-line" style="margin-top:8px">实际注入文本预览：${shownLength} 字${note}</div><div class="summary-box" style="margin-top:8px;max-height:320px">${escapeHtml(previewText)}</div>`
+        })() : ''}
+      </div>
+    `).join('')
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red)">注入调试加载失败</div>'
+  }
+}
+
+async function loadMemoryEmbeddingStatus() {
+  const el = document.getElementById('memory-embedding-status')
+  if (!el) return
+  try {
+    const r = await fetch(BASE + '/admin/memory-embedding-status')
+    const d = await r.json()
+    el.innerHTML = `
+      <div>enabled: <span style="color:${d.enabled ? 'var(--green)' : 'var(--yellow)'}">${d.enabled ? 'true' : 'false'}</span></div>
+      <div>model: ${escapeHtml(d.model || '未配置')}</div>
+      <div>missing: ${Number(d.missing_threads || 0)} Threads · ${Number(d.missing_events || 0)} Events</div>
+    `
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red)">Embedding 状态加载失败</div>'
+  }
+}
+
+async function backfillMemoryEmbeddings() {
+  const el = document.getElementById('memory-embedding-status')
+  if (el) el.innerHTML = '回填中…'
+  try {
+    const r = await fetch(BASE + '/admin/memory-embedding-backfill?limit=20', { method: 'POST' })
+    const d = await r.json()
+    if (d.status === 'disabled') {
+      toast('Embedding 未启用', 'err')
+    } else {
+      toast(`已回填 ${Number(d.written_threads || 0)} Thread / ${Number(d.written_events || 0)} Event`)
+    }
+    loadMemoryEmbeddingStatus()
+  } catch(e) {
+    toast('Embedding 回填失败', 'err')
+    loadMemoryEmbeddingStatus()
+  }
+}
+
+async function loadMemoryWriteDebug() {
+  const el = document.getElementById('memory-write-debug')
+  if (!el) return
+  try {
+    const r = await fetch(BASE + '/admin/memory-write-debug')
+    const data = await r.json()
+    if (!data.length) {
+      el.innerHTML = '<div style="color:var(--text3)">暂无写入判断记录。若已聊满5轮仍为空，说明触发链路没有调用 judge_memory。</div>'
+      return
+    }
+    el.innerHTML = data.map((d, idx) => `
+      <div class="thread-event-item">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+          <span class="list-item-date" style="min-width:0">${escapeHtml(d.created_at || '—')}</span>
+          <span style="color:var(--accent)">stage: ${escapeHtml(d.stage || '')}</span>
+          <span>mode: ${escapeHtml(d.mode || '')}</span>
+          <span>changed: ${d.changed ? 'true' : 'false'}</span>
+        </div>
+        <div class="tag-line">actions: ${escapeHtml(d.event_action || '—')} / ${escapeHtml(d.thread_action || '—')} · key: ${escapeHtml(d.selected_event_key || d.new_event_key || '—')}</div>
+        <div class="tag-line">candidates: ${Number(d.candidate_threads || 0)} Threads · ${Number(d.candidate_events || 0)} Events · ${Number(d.candidate_sibling_events || 0)} sibling · query_embedding: ${d.query_embedding ? 'true' : 'false'}</div>
+        <div class="tag-line">keywords: ${escapeHtml((d.keywords || []).join(', '))}</div>
+        ${d.error ? `<div style="color:var(--red);font-size:11px;margin-top:6px">error: ${escapeHtml(d.error)}</div>` : ''}
+        ${d.clean_result ? `<div class="summary-box" style="margin-top:8px;max-height:160px">${escapeHtml(d.clean_result)}</div>` : ''}
+      </div>
+    `).join('')
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red)">写入调试加载失败</div>'
+  }
+}
+
+async function toggleMemoryThreadEvents(eventKey, threadId, btn) {
+  const box = document.getElementById('thread-events-' + threadId)
+  if (!box) return
+
+  const isOpen = box.classList.contains('open')
+  if (isOpen) {
+    box.classList.remove('open')
+    btn.textContent = '展开 Events'
+    return
+  }
+
+  document.querySelectorAll('.thread-events').forEach(el => el.classList.remove('open'))
+  document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'))
+  document.querySelectorAll('.thread-item .expand-btn').forEach(el => el.textContent = '展开 Events')
+
+  document.getElementById('thread-' + threadId)?.classList.add('active')
+  box.classList.add('open')
+  btn.textContent = '收起 Events'
+
+  if (box.dataset.loaded === 'true') return
+  box.innerHTML = '<div style="color:var(--text3);padding:6px 0">Events 加载中…</div>'
+
+  try {
+    const r = await fetch(`${BASE}/admin/memory-events?event_key=${encodeURIComponent(eventKey)}&limit=80&offset=0`)
+    const data = await r.json()
+    const events = data.events || []
+    if (!events.length) {
+      box.innerHTML = '<div style="color:var(--text3);padding:6px 0">这个 Thread 下暂无 Event</div>'
+      box.dataset.loaded = 'true'
+      return
+    }
+
+    box.innerHTML = `
+      <div class="thread-meta">${escapeHtml(eventKey)} · ${data.total ?? events.length} 条 Events</div>
+      ${events.map(ev => `
+        <div class="thread-event-item" id="thread-event-${ev.id}">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;justify-content:space-between">
+            <div style="display:flex;gap:10px;align-items:center;min-width:0">
+              <span class="list-item-date" style="min-width:0">${escapeHtml(ev.occurred_at || '—')}</span>
+              <span style="font-size:10px;color:var(--text3)">${'★'.repeat(Number(ev.importance || 0))}</span>
+            </div>
+            <button class="btn btn-danger" onclick="deleteMemoryEventV2(${ev.id})">✕</button>
+          </div>
+          <div class="list-item-content">${escapeHtml(ev.summary)}</div>
+          ${ev.keywords ? `<div class="tag-line">keywords: ${escapeHtml(ev.keywords)}</div>` : ''}
+          ${ev.emotion_tags ? `<div class="tag-line">emotion: ${escapeHtml(ev.emotion_tags)}</div>` : ''}
+        </div>
+      `).join('')}
+    `
+    box.dataset.loaded = 'true'
+  } catch(e) {
+    box.innerHTML = '<div style="color:var(--red);padding:6px 0">Events 加载失败</div>'
+  }
+}
+
+async function selectMemoryThread(eventKey, threadId) {
+  if (!eventKey) return
+  memoryV2SelectedKey = eventKey
+  document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'))
+  document.getElementById('thread-' + threadId)?.classList.add('active')
+
+  const panel = document.getElementById('memory-v2-events-panel')
+  const listEl = document.getElementById('memory-v2-events')
+  const countEl = document.getElementById('memory-v2-events-count')
+  panel.style.display = 'block'
+  listEl.innerHTML = '加载中…'
+  countEl.textContent = escapeHtml(eventKey)
+
+  try {
+    const r = await fetch(`${BASE}/admin/memory-events?event_key=${encodeURIComponent(eventKey)}&limit=80&offset=0`)
+    const data = await r.json()
+    const events = data.events || []
+    countEl.textContent = `${escapeHtml(eventKey)} · ${data.total ?? events.length} 条`
+
+    if (!events.length) {
+      listEl.innerHTML = '<div style="color:var(--text3);padding:12px 0">这个 Thread 下暂无 Event</div>'
+      return
+    }
+
+    listEl.innerHTML = events.map(ev => `
+      <div class="list-item" id="event-${ev.id}">
+        <div style="min-width:92px">
+          <div class="list-item-date">${escapeHtml(ev.occurred_at || '—')}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">${'★'.repeat(Number(ev.importance || 0))}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="list-item-content">${escapeHtml(ev.summary)}</div>
+          ${ev.keywords ? `<div class="tag-line">keywords: ${escapeHtml(ev.keywords)}</div>` : ''}
+          ${ev.emotion_tags ? `<div class="tag-line">emotion: ${escapeHtml(ev.emotion_tags)}</div>` : ''}
+          <div class="event-meta">status: ${escapeHtml(ev.status || 'active')} · source: ${escapeHtml(ev.source_memory_ids || ev.source_memory_id || '')}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-danger" onclick="deleteMemoryEventV2(${ev.id})">✕</button>
+        </div>
+      </div>
+    `).join('')
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:var(--red)">Event 加载失败</div>'
+  }
+}
+
+async function deleteMemoryEventV2(id) {
+  if (!confirm('确认删除这条二期 Event？')) return
+  try {
+    const r = await fetch(BASE + '/admin/memory-events/' + id, { method: 'DELETE' })
+    if (!r.ok) throw new Error('delete failed')
+    document.getElementById('event-' + id)?.remove()
+    document.getElementById('thread-event-' + id)?.remove()
+    toast('Event 已删除')
+    loadMemoryEmbeddingStatus()
+  } catch(e) {
+    toast('Event 删除失败', 'err')
+  }
+}
+
+async function deleteMemoryThreadV2(eventKey, threadId) {
+  if (!confirm(`确认删除 Thread "${eventKey}"？\n它下面的所有 Events 也会一起删除。`)) return
+  try {
+    const r = await fetch(BASE + '/admin/memory-threads/' + encodeURIComponent(eventKey), { method: 'DELETE' })
+    if (!r.ok) throw new Error('delete failed')
+    document.getElementById('thread-' + threadId)?.remove()
+    toast('Thread 已删除')
+    loadMemoryV2(memoryV2CurrentPage)
+  } catch(e) {
+    toast('Thread 删除失败', 'err')
+  }
+}
+
+// ── Mav备忘 ──
+async function loadNotes() {
+  const el = document.getElementById('notes-list')
+  try {
+    const r = await fetch(BASE + '/admin/notes')
+    const data = await r.json()
+    if (!data.length) { el.innerHTML = '<div style="color:var(--text3);padding:12px 0">暂无备忘</div>'; return }
+    el.innerHTML = data.map(n => `
+      <div class="list-item" id="note-${n.id}">
+        <div class="list-item-content">${n.content}</div>
+        <button class="btn btn-danger" onclick="deleteNote(${n.id})">✕</button>
+      </div>
+    `).join('')
+  } catch(e) { el.innerHTML = '<div style="color:var(--red)">加载失败</div>' }
+}
+
+async function addNote() {
+  const content = document.getElementById('note-input').value.trim()
+  if (!content) return
+  try {
+    await fetch(BASE + '/admin/notes', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content})
+    })
+    document.getElementById('note-input').value = ''
+    toast('已添加')
+    loadNotes()
+  } catch(e) { toast('添加失败', 'err') }
+}
+
+async function deleteNote(id) {
+  try {
+    await fetch(BASE + '/admin/notes/' + id, { method: 'DELETE' })
+    document.getElementById('note-' + id)?.remove()
+    toast('已删除')
+  } catch(e) { toast('删除失败', 'err') }
+}
+
+// ── 岚的画像 ──
+const PORTRAIT_SECTIONS = [
+  { key: 'cognitive_style', name: '认知风格', group: '人格侧' },
+  { key: 'values', name: '价值取向', group: '人格侧' },
+  { key: 'self_perception', name: '自我认知与盲区', group: '人格侧' },
+  { key: 'emotional_pattern', name: '情绪模式', group: '人格侧' },
+  { key: 'need_to_be_seen', name: '被看见的需求', group: '人格侧' },
+  { key: 'relational_style', name: '关系方式', group: '人格侧' },
+  { key: 'core_abilities', name: '核心能力', group: '能力侧' },
+  { key: 'latent_abilities', name: '潜在能力', group: '能力侧' },
+  { key: 'limitations', name: '局限与代价', group: '能力侧' }
+]
+
+let portraitPassword = ''
+
+async function loadPortrait() {
+  const logsEl = document.getElementById('portrait-logs')
+  try {
+    const [statusRes, logsRes] = await Promise.all([
+      fetch(BASE + '/admin/portrait/status'),
+      fetch(BASE + '/admin/portrait/logs?limit=100')
+    ])
+    if (!statusRes.ok || !logsRes.ok) throw new Error('portrait status failed')
+    const status = await statusRes.json()
+    const logs = await logsRes.json()
+
+    setPortraitStat('portrait-section-count', status.section_count ?? 0, true)
+    setPortraitStat('portrait-populated-count', status.populated_count ?? 0, Number(status.populated_count) === 9)
+    setPortraitStat('portrait-update-switch', status.updates_enabled ? 'on' : 'off', status.updates_enabled)
+    setPortraitStat('portrait-password-status', status.password_configured ? 'ready' : 'missing', status.password_configured)
+
+    if (!Array.isArray(logs) || !logs.length) {
+      logsEl.innerHTML = '<div style="color:var(--text3);padding:4px 0">暂无更新记录</div>'
+      return
+    }
+    logsEl.innerHTML = logs.map(item => `
+      <div class="list-item">
+        <div class="list-item-date">${escapeHtml(formatPortraitTime(item.created_at))}</div>
+        <div class="list-item-content">
+          <span style="color:var(--text)">${escapeHtml(item.section_name)}</span>
+          <span style="color:var(--accent);margin-left:10px">${escapeHtml(item.action)}</span>
+          <span style="color:var(--text3);margin-left:10px">${Number(item.char_count || 0)} 字</span>
+          ${item.over_limit ? '<span style="color:var(--yellow);margin-left:10px">over limit</span>' : ''}
+        </div>
+      </div>
+    `).join('')
+  } catch(e) {
+    logsEl.innerHTML = '<div style="color:var(--red)">画像状态加载失败</div>'
+  }
+}
+
+function setPortraitStat(id, value, ok) {
+  const el = document.getElementById(id)
+  el.textContent = value
+  el.className = 'stat-value ' + (ok ? 'ok' : 'warn')
+}
+
+function formatPortraitTime(value) {
+  return String(value || '—').replace('T', ' ').replace(/\.\d+$/, '')
+}
+
+function showPortraitUnlock() {
+  document.getElementById('portrait-unlock-start').style.display = 'none'
+  document.getElementById('portrait-password-row').style.display = 'grid'
+  document.getElementById('portrait-password').focus()
+}
+
+function hidePortraitUnlock() {
+  document.getElementById('portrait-password').value = ''
+  document.getElementById('portrait-password-row').style.display = 'none'
+  document.getElementById('portrait-unlock-start').style.display = 'inline-block'
+}
+
+function handlePortraitPasswordKey(event) {
+  if (event.key === 'Enter') unlockPortrait()
+}
+
+async function unlockPortrait() {
+  const passwordInput = document.getElementById('portrait-password')
+  const password = passwordInput.value
+  if (!password) return
+  try {
+    const r = await fetch(BASE + '/admin/portrait', {
+      headers: { 'X-Portrait-Password': password }
+    })
+    if (!r.ok) {
+      const detail = await r.json().catch(() => ({}))
+      throw new Error(detail.detail || '解锁失败')
+    }
+    const data = await r.json()
+    portraitPassword = password
+    passwordInput.value = ''
+    renderPortraitEditor(data.sections || [])
+    document.getElementById('portrait-password-row').style.display = 'none'
+    document.getElementById('portrait-editor-card').style.display = 'block'
+    toast('画像已解锁')
+  } catch(e) {
+    portraitPassword = ''
+    toast(e.message || '密码错误', 'err')
+  }
+}
+
+function lockPortrait() {
+  portraitPassword = ''
+  document.getElementById('portrait-editor').innerHTML = ''
+  document.getElementById('portrait-editor-card').style.display = 'none'
+  document.getElementById('portrait-unlock-start').style.display = 'inline-block'
+  document.getElementById('portrait-password-row').style.display = 'none'
+  toast('画像已重新锁定')
+}
+
+function renderPortraitEditor(rows) {
+  const byKey = Object.fromEntries((rows || []).map(row => [row.section_key, row]))
+  let currentGroup = ''
+  let html = ''
+  for (const section of PORTRAIT_SECTIONS) {
+    if (section.group !== currentGroup) {
+      currentGroup = section.group
+      html += `<div class="portrait-group-title">${escapeHtml(currentGroup)}</div>`
+    }
+    const row = byKey[section.key] || {}
+    const content = row.content || ''
+    const limit = Number(row.char_limit || 150)
+    html += `
+      <div class="portrait-section">
+        <div class="portrait-section-head">
+          <div><span class="portrait-section-name">${escapeHtml(section.name)}</span><span class="portrait-section-key">${escapeHtml(section.key)}</span></div>
+          <span class="portrait-char-count ${content.length > limit ? 'over' : ''}" id="portrait-count-${section.key}">${content.length} / ${limit}</span>
+        </div>
+        <textarea data-portrait-key="${section.key}" data-char-limit="${limit}" oninput="updatePortraitCount('${section.key}')">${escapeHtml(content)}</textarea>
+      </div>
+    `
+  }
+  document.getElementById('portrait-editor').innerHTML = html
+}
+
+function updatePortraitCount(key) {
+  const textarea = document.querySelector(`[data-portrait-key="${key}"]`)
+  const count = document.getElementById('portrait-count-' + key)
+  if (!textarea || !count) return
+  const limit = Number(textarea.dataset.charLimit || 150)
+  count.textContent = `${textarea.value.length} / ${limit}`
+  count.classList.toggle('over', textarea.value.length > limit)
+}
+
+async function savePortrait() {
+  if (!portraitPassword) return toast('请先解锁画像', 'err')
+  const sections = {}
+  document.querySelectorAll('[data-portrait-key]').forEach(textarea => {
+    sections[textarea.dataset.portraitKey] = textarea.value.trim()
+  })
+  try {
+    const r = await fetch(BASE + '/admin/portrait', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Portrait-Password': portraitPassword
+      },
+      body: JSON.stringify({ sections })
+    })
+    if (!r.ok) throw new Error('保存失败')
+    toast('完整画像已保存')
+    loadPortrait()
+  } catch(e) {
+    toast('画像保存失败', 'err')
+  }
+}
+
+async function importPortraitFile(input) {
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  try {
+    const text = await file.text()
+    const sectionsByName = Object.fromEntries(PORTRAIT_SECTIONS.map(item => [item.name, item]))
+    const collected = Object.fromEntries(PORTRAIT_SECTIONS.map(item => [item.key, []]))
+    let currentKey = ''
+    for (const rawLine of text.replace(/\r\n/g, '\n').split('\n')) {
+      const line = rawLine.trim()
+      if (sectionsByName[line]) {
+        currentKey = sectionsByName[line].key
+        continue
+      }
+      if (['岚的画像', '人格侧', '能力侧'].includes(line)) continue
+      if (currentKey) collected[currentKey].push(rawLine)
+    }
+    let imported = 0
+    for (const section of PORTRAIT_SECTIONS) {
+      const value = collected[section.key].join('\n').trim()
+      if (!value) continue
+      const textarea = document.querySelector(`[data-portrait-key="${section.key}"]`)
+      if (textarea) {
+        textarea.value = value
+        updatePortraitCount(section.key)
+        imported += 1
+      }
+    }
+    if (imported !== PORTRAIT_SECTIONS.length) {
+      return toast(`只识别到 ${imported}/9 个栏目，请检查标题`, 'err')
+    }
+    toast('已读取9个栏目，确认后点击保存')
+  } catch(e) {
+    toast('画像文本读取失败', 'err')
+  }
+}
+
+// ── Profiles ──
+async function loadProfiles() {
+  const el = document.getElementById('profiles-list')
+  try {
+    const r = await fetch(BASE + '/admin/profiles')
+    const data = await r.json()
+    if (!data.length) { el.innerHTML = '<div style="color:var(--text3);padding:12px 0">暂无记录</div>'; return }
+    el.innerHTML = data.map(p => `
+      <div class="list-item" id="profile-${encodeURIComponent(p.key)}">
+        <div style="color:var(--accent);min-width:160px;font-size:12px">${p.key}</div>
+        <div class="list-item-content">${p.value}</div>
+        <button class="btn btn-danger" onclick="deleteProfile('${encodeURIComponent(p.key)}')">✕</button>
+      </div>
+    `).join('')
+  } catch(e) { el.innerHTML = '<div style="color:var(--red)">加载失败</div>' }
+}
+
+async function upsertProfile() {
+  const key = document.getElementById('profile-key').value.trim()
+  const value = document.getElementById('profile-value').value.trim()
+  if (!key || !value) return
+  try {
+    await fetch(BASE + '/admin/profiles', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key, value})
+    })
+    document.getElementById('profile-key').value = ''
+    document.getElementById('profile-value').value = ''
+    toast('已保存')
+    loadProfiles()
+  } catch(e) { toast('保存失败', 'err') }
+}
+
+async function deleteProfile(encodedKey) {
+  const key = decodeURIComponent(encodedKey)
+  if (!confirm(`确认删除 "${key}"？`)) return
+  try {
+    await fetch(BASE + '/admin/profiles', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ key })
+    })
+    document.getElementById('profile-' + encodedKey)?.remove()
+    toast('已删除')
+  } catch(e) { toast('删除失败', 'err') }
+}
+
+// ── System Core ──
+async function loadSystemCore() {
+  try {
+    const r = await fetch(BASE + '/admin/system-core')
+    const d = await r.json()
+    const ta = document.getElementById('system-core-input')
+    ta.value = d.content || ''
+    updateScChars()
+  } catch(e) { toast('加载失败', 'err') }
+}
+
+function updateScChars() {
+  const val = document.getElementById('system-core-input').value
+  document.getElementById('sc-chars').textContent = val.length + ' 字'
+}
+
+document.getElementById('system-core-input').addEventListener('input', updateScChars)
+
+async function saveSystemCore() {
+  const content = document.getElementById('system-core-input').value
+  try {
+    await fetch(BASE + '/admin/system-core', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content})
+    })
+    toast('已保存')
+  } catch(e) { toast('保存失败', 'err') }
+}
+
+// 初始加载
+async function loadIdentityLabels() {
+  try {
+    const response = await fetch(BASE + '/api/identity', {cache: 'no-store'})
+    if (!response.ok) return
+    const identity = await response.json()
+    document.querySelectorAll('[data-identity-template]').forEach((element) => {
+      element.textContent = element.dataset.identityTemplate
+        .replaceAll('Mav', identity.assistant_name)
+        .replaceAll('岚', identity.user_name)
+    })
+  } catch (_) { /* Keep default labels if gateway is unavailable. */ }
+}
+loadIdentityLabels()
+loadStatus()
+setInterval(loadStatus, 30000)
+</script>
+</body>
+</html>
